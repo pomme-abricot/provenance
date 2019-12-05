@@ -189,8 +189,11 @@ class Provenance(object):
         edef = dict(node=self.local_node_id(vid),
                     time_init=0,
                     time_end=0,
+                    nb_inputs=len(inputs),
                     inputs=inputs,
-                    outputs=outputs)
+                    nb_outputs=len(outputs),
+                    outputs=outputs,
+                    execution_time=0)
         self._executions.append(edef)
 
     def as_wlformat(self):
@@ -212,6 +215,7 @@ class Provenance(object):
                     time_end=self.time_end,
                     data=data,
                     parameters=self._parameters,
-                    executions=self._executions)
+                    executions=self._executions,
+                    total_execution_time=self.time_end-self.time_init)
 
         return pdef
