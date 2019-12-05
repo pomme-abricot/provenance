@@ -1,6 +1,7 @@
 """Simple implementation of wlformat.prov_exe schema using dicts
 """
 from uuid import uuid1
+import hashlib
 
 
 class Provenance(object):
@@ -132,7 +133,11 @@ class Provenance(object):
                 pname = fac.outputs[dataflow.local_id(oport)]['name']
                 did = self.output_did(last_exec, pname)
             else:  # lonely input port
-                did = uuid1().hex
+                # did = uuid1().hex
+                # TODO: find a better way to give uid to data 
+                # did depends on the parameter and the node id
+                did = hashlib.md5(str(node.get_input(i)) + str(node.factory.uid)).hexdigest() 
+
                 data = dict(id=did,
                             type=str(port.get('interface')),
                             value=node.get_input(i))
@@ -169,7 +174,11 @@ class Provenance(object):
         # create a new data for each data on output port
         outputs = []
         for i, port in enumerate(node.factory.outputs):
-            did = uuid1().hex
+            # did = uuid1().hex
+            # TODO: find a better way to give uid to data 
+            # did depends on the node id and the data processed
+            did = hashlib.md5(inputs[i]['data'] + str(node.factory.uid)).hexdigest()
+
             outputs.append(dict(port=port['name'], data=did))
             data = dict(id=did,
                         type=str(port.get('interface')),
