@@ -2,6 +2,7 @@
 """
 from uuid import uuid1
 import hashlib
+from openalea.core.metadata.data_size import getsize
 
 
 class Provenance(object):
@@ -136,11 +137,13 @@ class Provenance(object):
                 # did = uuid1().hex
                 # TODO: find a better way to give uid to data 
                 # did depends on the parameter and the node id
-                did = hashlib.sha224(str(node.get_input(i)) + str(node.factory.uid)).hexdigest() 
+                # str(node.get_input(i)) +
+                did = hashlib.sha224(str(node.factory.uid)).hexdigest() 
 
                 data = dict(id=did,
                             type=str(port.get('interface')),
-                            value=node.get_input(i))
+                            value=node.get_input(i),
+                            size=getsize(node.get_input(i)))
                 self._data.append(data)
 
                 param = dict(node=self.local_node_id(vid),
@@ -148,7 +151,10 @@ class Provenance(object):
                              data=did)
                 self._parameters.append(param)
 
-            inputs.append(dict(port=port['name'], data=did))
+            inputs.append(dict(port=port['name'], 
+                                data=did,
+                                size=getsize(node.get_input(i))
+                                ))
 
         self._buffer[vid] = inputs
 
@@ -177,24 +183,44 @@ class Provenance(object):
             # did = uuid1().hex
             # TODO: find a better way to give uid to data 
             # did depends on the node id and the data processed
-            did = hashlib.sha224(inputs[i]['data'] + str(node.factory.uid)).hexdigest()
+            # did = hashlib.sha224(inputs[i]['data'] + str(node.factory.uid)).hexdigest()
+            did = ""
+            for inp in inputs:
+                did+=inp['port']+":"+inp['data']+";"
+            did = hashlib.sha224(did).hexdigest()
 
-            outputs.append(dict(port=port['name'], data=did))
+            outputs.append(dict(port=port['name'],
+                                data=did,
+                                size=getsize(node.get_output(i))))
+
             data = dict(id=did,
                         type=str(port.get('interface')),
-                        value=node.get_output(i))
+                        # value=node.get_output(i),
+                        size=getsize(node.get_output(i))
             self._data.append(data)
+
+        # get the task ID randomly generated
+        # task_id = uuid1().hex
+        # generate an task uID based on the data id + node id
+        # TODO: find a way to give an uid to the task - Now: the same as data
+        tmp_did = ""
+        for inp in inputs:
+            tmp_did += inp['port'] + ":" + inp['data'] + ";"
+        tmp_did += str(node.get_id())
+        task_id = uuid5(NAMESPACE_DNS, tmp_did).hex
 
         # create a new execution
         edef = dict(node=self.local_node_id(vid),
-                    time_init=0,
-                    time_end=0,
-                    nb_inputs=len(inputs),
+                    task_id=task_id,
+                    # time_init=0,
+                    # time_end=0,
+                    cpu_time=dt,
+                    n_input=len(inputs),
                     inputs=inputs,
-                    nb_outputs=len(outputs),
-                    outputs=outputs,
-                    execution_time=0)
+                    n_output=len(outputs),
+                    outputs=outputs)
         self._executions.append(edef)
+        return edef
 
     def as_wlformat(self):
         """Convert this dictionary into a wlformat compatible dict
@@ -215,7 +241,5 @@ class Provenance(object):
                     time_end=self.time_end,
                     data=data,
                     parameters=self._parameters,
-                    executions=self._executions,
-                    total_execution_time=self.time_end-self.time_init)
-
+                    executions=self._executions)
         return pdef
