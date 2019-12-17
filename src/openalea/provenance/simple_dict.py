@@ -196,7 +196,7 @@ class Provenance(object):
             data = dict(id=did,
                         type=str(port.get('interface')),
                         # value=node.get_output(i),
-                        size=getsize(node.get_output(i))
+                        size=getsize(node.get_output(i)))
             self._data.append(data)
 
         # get the task ID randomly generated
