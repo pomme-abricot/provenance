@@ -207,14 +207,15 @@ class Provenance(object):
         for inp in inputs:
             tmp_did += inp['port'] + ":" + inp['data'] + ";"
         tmp_did += str(node.get_id())
-        task_id = uuid5(NAMESPACE_DNS, tmp_did).hex
+        # task_id = uuid5(NAMESPACE_DNS, tmp_did).hex
+        task_id = hashlib.sha224(tmp_did).hexdigest()
 
         # create a new execution
         edef = dict(node=self.local_node_id(vid),
                     task_id=task_id,
                     # time_init=0,
                     # time_end=0,
-                    cpu_time=dt,
+                    # cpu_time=dt,
                     n_input=len(inputs),
                     inputs=inputs,
                     n_output=len(outputs),
