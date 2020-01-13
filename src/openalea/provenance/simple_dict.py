@@ -2,7 +2,7 @@
 """
 from uuid import uuid1
 import hashlib
-from openalea.core.metadata.data_size import getsize
+from openalea.distributed.metadata.data_size import getsize
 
 
 class Provenance(object):
