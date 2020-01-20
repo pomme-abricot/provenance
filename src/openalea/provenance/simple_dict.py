@@ -138,8 +138,7 @@ class Provenance(object):
                 # TODO: find a better way to give uid to data 
                 # did depends on the parameter and the node id
                 # str(node.get_input(i)) +
-                did = hashlib.sha224(str(node.factory.uid)).hexdigest() 
-
+                did = hashlib.sha224(str(node.factory.name)).hexdigest() 
                 data = dict(id=did,
                             type=str(port.get('interface')),
                             value=node.get_input(i),
@@ -158,12 +157,13 @@ class Provenance(object):
 
         self._buffer[vid] = inputs
 
-    def after_eval(self, dataflow, vid):
+    def after_eval(self, dataflow, vid, dt):
         """Function called just after evaluating a node
 
         Args:
             dataflow (CompositeNode): workflow currently under evaluation
             vid (vid): id of node to be evaluated
+            dt: execution time of a task
 
         Returns:
             None
@@ -215,7 +215,7 @@ class Provenance(object):
                     task_id=task_id,
                     # time_init=0,
                     # time_end=0,
-                    # cpu_time=dt,
+                    cpu_time=dt,
                     n_input=len(inputs),
                     inputs=inputs,
                     n_output=len(outputs),
