@@ -138,7 +138,9 @@ class Provenance(object):
                 # TODO: find a better way to give uid to data 
                 # did depends on the parameter and the node id
                 # str(node.get_input(i)) +
-                did = hashlib.sha224(str(node.factory.name)).hexdigest() 
+                did = str(node.factory.name)
+                did = did + str(node.inputs)
+                did = hashlib.sha224(did).hexdigest() 
                 data = dict(id=did,
                             type=str(port.get('interface')),
                             value=node.get_input(i),
