@@ -133,12 +133,14 @@ class Provenance(object):
                 fac = dataflow.node(dataflow.vertex(oport)).factory
                 pname = fac.outputs[dataflow.local_id(oport)]['name']
                 did = self.output_did(last_exec, pname)
+                size=getsize(node.get_input(i))
             else:  # lonely input port
                 did = set_id_parameter_data(dataflow, vid)
+                size=getsize(node.get_input(i))
                 data = dict(id=did,
                             type=str(port.get('interface')),
                             value=node.get_input(i),
-                            size=getsize(node.get_input(i)))
+                            size=size)
                 self._data.append(data)
 
                 param = dict(node=self.local_node_id(vid),
@@ -148,7 +150,7 @@ class Provenance(object):
 
             inputs.append(dict(port=port['name'], 
                                 data=did,
-                                size=getsize(node.get_input(i))
+                                size=size
                                 ))
 
         self._buffer[vid] = inputs
@@ -168,23 +170,29 @@ class Provenance(object):
         if vid in (0, 1):  # __in__ and __out__ fucking ports
             print "in out not handled"
             return
+        total_size_input=0.
+        total_size_output=0.
 
         node = dataflow.node(vid)
         # retrieve previously stored inputs
         inputs = self._buffer.pop(vid)
+        for inp in inputs:
+            total_size_input+=inp['size']
 
         # create a new data for each data on output port
         outputs = []
         for i, port in enumerate(node.factory.outputs):
             did = set_id_intermediate_data(inputs, dataflow, vid)
+            size=getsize(node.get_output(i))
             outputs.append(dict(port=port['name'],
                                 data=did,
-                                size=getsize(node.get_output(i))))
+                                size=size))
 
             data = dict(id=did,
                         type=str(port.get('interface')),
                         # value=node.get_output(i),
-                        size=getsize(node.get_output(i)))
+                        size=size)
+            total_size_output+=size
             self._data.append(data)
 
         task_id = set_id_task(inputs, dataflow, vid)
@@ -194,11 +202,14 @@ class Provenance(object):
                     task_id=task_id,
                     # time_init=0,
                     # time_end=0,
+                    dltime =  0.,
                     cpu_time=dt,
                     n_input=len(inputs),
                     inputs=inputs,
+                    size_input=total_size_input,
                     n_output=len(outputs),
-                    outputs=outputs)
+                    outputs=outputs,
+                    size_output=total_size_output)
         self._executions.append(edef)
         return edef
 
