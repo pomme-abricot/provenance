@@ -9,9 +9,9 @@ class Provenance(object):
     """Simple object to store provenance results
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         print "constructor"
-        self._uid = None
+        self._uid = kwargs.get("execution_id", uuid1().hex)
         self._data = []
         self._parameters = []
         self._executions = []
@@ -20,6 +20,7 @@ class Provenance(object):
         self.time_init = None
         self.time_end = None
         self._buffer = {}
+        self._index = kwargs.get("index", None)
 
     def workflow(self):
         """Returns id of associated workflow
@@ -81,7 +82,7 @@ class Provenance(object):
 
         raise KeyError("unable to find '%s' for this execution" % port)
 
-    def init(self, dataflow):
+    def init(self, dataflow, **kwargs):
         """Initialize the provenance with a new dataflow
 
         Args:
@@ -91,7 +92,6 @@ class Provenance(object):
             None
         """
         print "init prov", id(dataflow)
-        self._uid = uuid1().hex
         self._workflow = dataflow
         self._buffer.clear()
 
@@ -120,20 +120,26 @@ class Provenance(object):
                 raise UserWarning("don't know how to handle multiple "
                                   "connection on same in port")
             in_port[tid] = dataflow.source_port(eid)
-
         inputs = []
         for i, port in enumerate(node.factory.inputs):
             if i in in_port:  # find id of data produced above
                 oport = in_port[i]
                 nid = self.local_node_id(dataflow.vertex(oport))
                 last_exec = self.last_execution(nid)
+                # IF the data is load, there is no "last_exec" -> Get the task id from index
+                # if last_exec is None:
+                #     raise UserWarning("something went wrong in the order "
+                #                       "of executions")
                 if last_exec is None:
-                    raise UserWarning("something went wrong in the order "
-                                      "of executions")
-                fac = dataflow.node(dataflow.vertex(oport)).factory
-                pname = fac.outputs[dataflow.local_id(oport)]['name']
-                did = self.output_did(last_exec, pname)
-                size=getsize(node.get_input(i))
+                    fac = dataflow.node(dataflow.vertex(oport)).factory
+                    pname = fac.outputs[dataflow.local_id(oport)]['name']
+                    did = self._index[vid]
+                    size=0
+                else:
+                    fac = dataflow.node(dataflow.vertex(oport)).factory
+                    pname = fac.outputs[dataflow.local_id(oport)]['name']
+                    did = self.output_did(last_exec, pname)
+                    size=getsize(node.get_input(i))
             else:  # lonely input port
                 did = set_id_parameter_data(dataflow, vid, port)
                 size=getsize(node.get_input(i))
@@ -201,6 +207,7 @@ class Provenance(object):
         edef = dict(node=self.local_node_id(vid),
                     vid=vid,
                     task_id=task_id,
+                    wf_id=self._uid,
                     # time_init=0,
                     # time_end=0,
                     dltime =  0.,
