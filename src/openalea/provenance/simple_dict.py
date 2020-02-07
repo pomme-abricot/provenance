@@ -135,7 +135,7 @@ class Provenance(object):
                 did = self.output_did(last_exec, pname)
                 size=getsize(node.get_input(i))
             else:  # lonely input port
-                did = set_id_parameter_data(dataflow, vid)
+                did = set_id_parameter_data(dataflow, vid, port)
                 size=getsize(node.get_input(i))
                 data = dict(id=did,
                             type=str(port.get('interface')),
@@ -199,6 +199,7 @@ class Provenance(object):
 
         # create a new execution
         edef = dict(node=self.local_node_id(vid),
+                    vid=vid,
                     task_id=task_id,
                     # time_init=0,
                     # time_end=0,
@@ -262,12 +263,12 @@ def set_id_intermediate_data(inputs, dataflow, vid):
     node = dataflow.node(vid)
     did = ""
     for inp in inputs:
-        did+=inp['port']+":"+inp['data']+";"
+        did += inp['port'] + ":" + inp['data'] + ";"
     did += str(node.get_id())
     did = hashlib.sha224(did).hexdigest()
     return did
 
-def set_id_parameter_data(dataflow, vid):
+def set_id_parameter_data(dataflow, vid, port):
     """Get an uid for the input data of the task (vid)
     Only input data of root nodes.
 
@@ -276,6 +277,6 @@ def set_id_parameter_data(dataflow, vid):
     """
     node = dataflow.node(vid)
     did=""
-    did = str(node.factory.name)
-    did = did + str(node.inputs)
+    did = str(port['name'])
+    did = did + str(node.get_input(port['name']))
     return hashlib.sha224(did).hexdigest() 
